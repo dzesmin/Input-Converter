@@ -1,6 +1,6 @@
 
 
-PT.py 
+  PT.py 
 # ===============================================================
 # Code takes 6 free parameters for inversion case, 5 for 
 # non-inversion case and number of levels in the atmosphere 
@@ -13,7 +13,7 @@ PT.py
 
 
 
-PTatmfile.py 
+  PTatmfile.py 
 # ==========================================================================
 # Code takes a pressure array (e.g., extracted from an atmospheric file), 
 # and 6 free parameters for inversion case, 5 for non-inversion case and
@@ -24,16 +24,16 @@ PTatmfile.py
 # ==========================================================================
 
 
-atmosphJB.dat
-#====================================================================
+  atmosphJB.dat
+# ====================================================================
 # An example of an atmospheric file format used for InputConverter.py
 # with pressure equally spaced in log space.
-#====================================================================
+# ====================================================================
 
 
 
-TransitInput
-#=====================================================================
+  TransitInput
+# =====================================================================
 # Output of InputConverter.py and Input for Transit code. 
 # First column is a header which lists molecular species of interest 
 # and temperatures at each level in the atmosphere. Second column 
@@ -41,11 +41,11 @@ TransitInput
 # smoothed temperatures for PT profile. Top row defines whether it is 
 # an inversion or non-inversion case. Number of levels is set in the 
 # atmospheric file provided.
-#=====================================================================
+# =====================================================================
 
 
 
-InputConverter.py
+  InputConverter.py
 # ==============================================================================
 # This is an input generator for Transit code that currently works with 
 # parametrized PT profile similar as in Madhusudhan and Seager 2009, but has a
