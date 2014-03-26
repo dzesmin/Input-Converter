@@ -46,19 +46,20 @@
 
 
   InputConverter.py
-# ==============================================================================
+# ==========================================================================
 # This is an input generator for Transit code that currently works with 
-# parametrized PT profile similar as in Madhusudhan and Seager 2009, but has a
-# capability to be extended for other PT profiles. It reads an atmospheric file, 
-# extracts list of pressures, gets array of free parameters from DEMC (for 
-# inversion: x species multipliers and 6 for PT  profile; for non-inversion:
-# x species multipliers and 5 for PT profile), evaluates PT from free 
-# parameters and the pressure array, makes 1D array of species multipliers and 
-# temperatures, and sends this array to Transit. 
+# parametrized PT profile similar as in Madhusudhan and Seager 2009, 
+# but has a capability to be extended for other PT profiles. It reads 
+# an atmospheric file, extracts list of pressures, gets array of free 
+# parameters from DEMC (for inversion: x species multipliers and 6 for PT
+# profile; for non-inversion: x species multipliers and 5 for PT profile), 
+# evaluates PT from free parameters and the pressure array, makes 1D array 
+# of species multipliers and temperatures, and sends this array to Transit. 
 # The code takes 3 arguments on the command line: 
 # "InputConverter.py atmfile number_of_species MadhuPT_Inv/MadhuPT_NoINv"
-# The atmospheric file needs to provide a pressure array equally spaced in log
-# space between 100 bar and 1e-5 bar. User should edit the write_transit_input 
-# function, where the mark "EDIT" is to set names of the molecular species of 
-# interest. The code uses MPI twice, to communicate with DEMC and Transit. 
-# ==============================================================================
+# The atmospheric file needs to provide a pressure array equally spaced 
+# in log space between 100 bar and 1e-5 bar. User should edit the 
+# write_transit_input function, where the mark "EDIT" is to set names of
+# the molecular species of interest. The code uses MPI twice, to communicate
+# with DEMC and Transit. 
+# ==========================================================================
