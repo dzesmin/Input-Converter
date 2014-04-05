@@ -7,6 +7,10 @@ import string
 
 plt.ion()
 
+# 2013-11-17 0.1  Jasmina Blecic, jasmina@physics.ucf.edu   Original version
+# 2014-04-05 0.2  Jasmina Blecic, jasmina@physics.ucf.edu   Revision
+#                 changed free parameter T0 to T3
+#                 changed equations accordingly 
 
 # ==========================================================================
 # Code takes a pressure array (e.g., extracted from an atmospheric file), 
@@ -17,9 +21,7 @@ plt.ion()
 # equally spaced in log space.
 # ==========================================================================
 
-
-
-def PT_Inversion(p, a1, a2, p1, p2, p3, T0):
+def PT_Inversion(p, a1, a2, p1, p2, p3, T3):
      '''
      Calculates PT profile for inversion case
      based on Equation (2) from Madhusudhan & Seager 2009.
@@ -32,7 +34,7 @@ def PT_Inversion(p, a1, a2, p1, p2, p3, T0):
      p1: float
      p2: float
      p3: float
-     T0: float
+     T3: float
       
      Returns
      -------
@@ -122,19 +124,17 @@ def PT_Inversion(p, a1, a2, p1, p2, p3, T0):
      p3 = np.random.uniform(0.5  , 10  )
      p2 = np.random.uniform(0.01 , 1   )
      p1 = np.random.uniform(0.001, 0.01)
-     T0 = np.random.uniform(1000 , 3000)
-
+     T3 = np.random.uniform(1500 , 1700)
 
      # generates raw and smoothed PT profile
-     PT_Inv, T_smooth = PT_Inversion(p, a1, a2, p1, p2, p3, T0)
+     PT_Inv, T_smooth = PT_Inversion(p, a1, a2, p1, p2, p3, T3)
 
      # returns full temperature array and temperatures at every point
-     T, T1, T2, T3 = PT_Inv[8], PT_Inv[9], PT_Inv[10], PT_Inv[11]
+     T, T0, T1, T2, T3 = PT_Inv[8], PT_Inv[9], PT_Inv[10], PT_Inv[11], PT_Inv[12]
 
      # sets plots in the middle 
      minT= min(T0, T2)*0.75
      maxT= max(T1, T3)*1.25
-
 
      # plots raw PT profile with equally spaced points in log space
      plt.figure(1)
@@ -164,10 +164,12 @@ def PT_Inversion(p, a1, a2, p1, p2, p3, T0):
      #plt.savefig('ThermInverSmoothed.png', format='png')
      #plt.savefig('ThermInverSmoothed.ps' , format='ps' )
 
-
      Revisions
      ---------
      2013-11-14 0.1  Jasmina Blecic, jasmina@physics.ucf.edu   Original version
+     2014-04-05 0.2  Jasmina Blecic, jasmina@physics.ucf.edu   Revision
+                     added T3 as free parameter instead of T0
+                     changed boundary condition equations accordingly
      '''
 
      # the following set of equations derived using Equation 2
@@ -176,22 +178,21 @@ def PT_Inversion(p, a1, a2, p1, p2, p3, T0):
      # sets top of the atmosphere to p0 to have easy understandable equations
      p0 = min(p)
 
+     # temperature at point 2
+     # calculated from boundary condition between layer 2 and 3
+     T2 = T3 - (np.log(p3/p2) / a2)**2
+
+     # temperature at the top of the atmosphere
+     # calculated from boundary condition between layer 1 and 2
+     T0 = T2 + (np.log(p1/p2) / -a2)**2 - (np.log(p1/p0) / a1)**2 
+
      # temperature at point 1
      T1 = T0 + (np.log(p1/p0) / a1)**2
 
-     # temperature at point 2
-     # calculated from boundary condition between layer 1 and 2
-     T2 = T0 + (np.log(p1/p0) / a1)**2 - (np.log(p1/p2) / -a2)**2
-
-     # temperature at point 3
-     # calculated from boundary condition between layer 2 and 3
-     T3 = T2 + (np.log(p3/p2) / a2)**2
-
      # error message when temperatures ar point 1, 2 or 3 are < 0
-     if T1<0 or T2<0 or T3<0:
-          print 'T1, T2 and T3 temperatures are: ', T1, T2, T3
+     if T0<0 or T1<0 or T2<0 or T3<0:
+          print 'T0, T1, T2 and T3 temperatures are: ', T0, T1, T2, T3
           raise ValueError('Input parameters give non-physical profile. Try again.')
-
 
      # defining arrays of pressures for every part of the PT profile
      p_l1     = p[(np.where((p >= min(p)) & (p < p1)))]
@@ -204,8 +205,6 @@ def PT_Inversion(p, a1, a2, p1, p2, p3, T0):
      #print  'Total number of levels in p: ', len(p)
      #print  '\nLevels per levels in inversion case (l1, l2_pos, l2_neg, l3) are respectively: ', len(p_l1), len(p_l2_pos), len(p_l2_neg), len(p_l3)
      #print  'Checking total number of levels in inversion case: ', check
-
-
 
      # the following set of equations derived using Equation 2
      # Madhusudhan and Seager 2009
@@ -226,7 +225,7 @@ def PT_Inversion(p, a1, a2, p1, p2, p3, T0):
      T_conc = np.concatenate((T_l1, T_l2_pos, T_l2_neg, T_l3))
 
      # PT profile
-     PT_Inver = (T_l1, p_l1, T_l2_pos, p_l2_pos, T_l2_neg, p_l2_neg, T_l3, p_l3, T_conc, T1, T2, T3)
+     PT_Inver = (T_l1, p_l1, T_l2_pos, p_l2_pos, T_l2_neg, p_l2_neg, T_l3, p_l3, T_conc, T0, T1, T2, T3)
 
      # smoothing with Gaussian_filter1d
      sigma = 4
@@ -236,8 +235,7 @@ def PT_Inversion(p, a1, a2, p1, p2, p3, T0):
 
 
 
-
-def PT_NoInversion(p, a1, a2, p1, p3, T0):
+def PT_NoInversion(p, a1, a2, p1, p3, T3):
      '''
      Calculates PT profile for non-inversion case.
  
@@ -248,7 +246,7 @@ def PT_NoInversion(p, a1, a2, p1, p3, T0):
      a2: float
      p1: float
      p3: float
-     T0: float
+     T3: float
       
      Returns
      -------
@@ -332,13 +330,13 @@ def PT_NoInversion(p, a1, a2, p1, p3, T0):
      a2 = np.random.uniform(0.04 , 0.5 )
      p3 = np.random.uniform(0.5  , 10  )
      p1 = np.random.uniform(0.001, 0.01)
-     T0 = np.random.uniform(1000 , 3000)
+     T3 = np.random.uniform(1500 , 1700)
 
      # generates raw and smoothed PT profile
-     PT_NoInv, T_smooth = PT_NoInversion(p, a1, a2, p1, p3, T0)
+     PT_NoInv, T_smooth = PT_NoInversion(p, a1, a2, p1, p3, T3)
 
      # returns full temperature array and temperatures at every point
-     T, T1, T3 = PT_NoInv[6], PT_NoInv[7], PT_NoInv[8]
+     T, T0, T1, T3 = PT_NoInv[6], PT_NoInv[7], PT_NoInv[8], PT_NoInv[9]
 
      # sets plots in the middle 
      minT= T0*0.75
@@ -377,6 +375,9 @@ def PT_NoInversion(p, a1, a2, p1, p3, T0):
      Revisions
      ---------
      2013-11-16 0.1  Jasmina Blecic, jasmina@physics.ucf.edu   Original version
+     2014-04-05 0.2  Jasmina Blecic, jasmina@physics.ucf.edu   Revision
+                     added T3 as free parameter instead of T0
+                     changed boundary condition equations accordingly
      '''
 
      # the following set of equations derived using Equation 2
@@ -385,18 +386,17 @@ def PT_NoInversion(p, a1, a2, p1, p3, T0):
      # sets top of the atmosphere to p0 to have easy understandable equations
      p0 = min(p)
 
-     # temperature at point 1
-     T1 = T0 + (np.log(p1/p0) / a1)**2
-
      # temperature at point 3
      # calculated from boundary condition between layer 2 and 3
-     T3 = T1 + (np.log(p3/p1) / a2)**2
+     T1 = T3 - (np.log(p3/p1) / a2)**2
+
+     # temperature at point 1
+     T0 = T1 - (np.log(p1/p0) / a1)**2
 
      # error message when Ts are < 0
-     if T1<0 or T3<0:
-          print 'T1 and T3 temperatures are: ', T1, T3
+     if T0<0 or T1<0 or T3<0:
+          print 'T0, T1 and T3 temperatures are: ', T0, T1, T3
           raise ValueError('Input parameters give non-physical profile. Try again.')
-
 
      # defining arrays for every part of the PT profile
      p_l1     = p[(np.where((p >= min(p)) & (p < p1)))]
@@ -426,7 +426,7 @@ def PT_NoInversion(p, a1, a2, p1, p3, T0):
      T_conc = np.concatenate((T_l1, T_l2_neg, T_l3))
 
      # PT profile
-     PT_NoInver = (T_l1, p_l1, T_l2_neg, p_l2_neg, T_l3, p_l3, T_conc, T1, T3)
+     PT_NoInver = (T_l1, p_l1, T_l2_neg, p_l2_neg, T_l3, p_l3, T_conc, T0, T1, T3)
 
      # smoothing with Gaussian_filter1d
      sigma = 4
