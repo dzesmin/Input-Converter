@@ -25,8 +25,8 @@ plt.ion()
 # profile; for non-inversion: x species multipliers and 5 for PT profile),
 # evaluates PT from free parameters and the pressure array, makes 1D array 
 # of species multipliers and temperatures, and sends this array to Transit. 
-# The code takes 3 arguments on the command line: 
-# "InputConverter.py atmfile number_of species MadhuPT_Inv/MadhuPT_NoINv"
+# The code takes 4 arguments on the command line: 
+# "InputConverter.py atmfile tepfile number_of species MadhuPT_Inv/MadhuPT_NoINv"
 # The atmospheric file needs to provide a pressure array equally spaced 
 # in log space between 100 bar and 1e-5 bar. User should edit the 
 # write_transit_input function, where the mark "EDIT" is to set names 
@@ -727,7 +727,6 @@ def main():
 
      # calls the loop
      loop(p, noSpecies, MadhuPT, tepfile)
-
 
 
 if __name__ == "__main__":
