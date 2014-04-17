@@ -202,9 +202,9 @@ def PT_Inversion(p, a1, a2, p1, p2, p3, T3):
 
      # sanity check for total number of levels
      check = len(p_l1) + len(p_l2_pos) + len(p_l2_neg) + len(p_l3)
-     #print  'Total number of levels in p: ', len(p)
-     #print  '\nLevels per levels in inversion case (l1, l2_pos, l2_neg, l3) are respectively: ', len(p_l1), len(p_l2_pos), len(p_l2_neg), len(p_l3)
-     #print  'Checking total number of levels in inversion case: ', check
+     print  'Total number of levels in p: ', len(p)
+     print  '\nLevels per levels in inversion case (l1, l2_pos, l2_neg, l3) are respectively: ', len(p_l1), len(p_l2_pos), len(p_l2_neg), len(p_l3)
+     print  'Checking total number of levels in inversion case: ', check
 
      # the following set of equations derived using Equation 2
      # Madhusudhan and Seager 2009
@@ -405,9 +405,9 @@ def PT_NoInversion(p, a1, a2, p1, p3, T3):
 
      # sanity check for total number of levels
      check = len(p_l1) + len(p_l2_neg) + len(p_l3)
-     #print  'Total number of levels: ', len(p)
-     #print  '\nLevels per levels in non inversion case (l1, l2_neg, l3) are respectively: ', len(p_l1), len(p_l2_neg), len(p_l3)
-     #print  'Checking total number of levels in non inversion case: ', check
+     print  'Total number of levels: ', len(p)
+     print  '\nLevels per levels in non inversion case (l1, l2_neg, l3) are respectively: ', len(p_l1), len(p_l2_neg), len(p_l3)
+     print  'Checking total number of levels in non inversion case: ', check
 
 
      # the following set of equations derived using Equation 2
@@ -433,6 +433,5 @@ def PT_NoInversion(p, a1, a2, p1, p3, T3):
      T_smooth = gaussian_filter1d(T_conc, sigma, mode='nearest')
 
      return PT_NoInver, T_smooth
-
 
 
