@@ -822,11 +822,6 @@ def main():
      p = read_press_file(press_file)
      print 'pressure file', p
 
-     # reads pressure file and returns array of pressures
-     atmfile = 'atmosphJB.dat'
-     p1 = read_atm_file(atmfile)
-     print 'atm file', p1
-
      # reads tepfile and returns Teff
      Teff = planet_Teff(tepfile)
 
