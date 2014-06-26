@@ -3,50 +3,56 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter1d
-from PTatmfile import *
+from PTpressFile import *
 import sys
 import string
 import reader as rd
-from adiabaticPT import *
+from initialPT import *
+import makeP as mP
 
 plt.ion()
 
-# 2013-11-17 0.1  Jasmina Blecic, jasmina@physics.ucf.edu   Original version
-# 2014-04-05 0.2  Jasmina Blecic, jasmina@physics.ucf.edu   Revision
-#      added new function planet_Teff
-#      changed free parameter T0 to T3 and equations and functions accordingly
-# 2014-04-17 0.3  Jasmina Blecic, asmina@physics.ucf.edu   Revision
-#      added adiabatic PT profile and free parameter generator
 # =============================================================================
 # This code serves as an input generator for Transit code and as a free 
 # parameter generator for DEMC. It works with parametrized PT profile done 
 # in a similar fashion as in Madhusudhan and Seager 2009, but has
 # a capability to be extended for other PT profiles. 
 # 1. 
-# The input generator for the Transit code: reads an atmospheric
-# file, extracts list of pressures, reads a tepfile, calculates planet's
-# effective temperature to constrain one free paramater, gets array of free
-# parameters from DEMC (for inversion: x species multipliers and 6 for PT
-# profile; for non-inversion: x species multipliers and 5 for PT profile),
+# The input generator for the Transit code: reads a pressure file, extracts
+# list of pressures, reads a tepfile, calculates planet's effective temperature
+# to constrain one free parameter (T3), gets array of free parameters from DEMC
+# (for inversion: x species multipliers and 6 for PT profile; 
+# for non-inversion: x species multipliers and 5 for PT profile),
 # evaluates PT from free parameters and the pressure array, makes 1D array 
 # of species multipliers and temperatures, and sends this array to Transit. 
 # The code takes 4 arguments on the command line: 
-# "InputConverter.py atmfile tepfile number_of_species MadhuPT_Inv/MadhuPT_NoINv"
-# The atmospheric file needs to provide a pressure array equally spaced 
-# in log space between 100 bar and 1e-5 bar. User should edit the 
-# write_transit_input function, where the mark "EDIT" is to set names 
-# of the molecular species of interest. 
+# "InputConverter.py pressureFile tepfile number_of_species MadhuPT_Inv/MadhuPT_NoINv"
+# Example: InputConverter.py pressure_file.txt WASP-43b.tep 4 MadhuPT_Inv
+# User should edit the write_transit_input function, where the mark "EDIT" is,
+# to set the names of the molecular species of interest. 
 # 2.
-# The adiabatic profile free parameter generator for DEMC: reads an atmospheric
-# file, extracts list of pressures, reads a tepfile, calculates planet's
-# effective temperature to constrain one free parameter, generates 5 free 
-# parameters and plots the adiabatic PT profile. It uses adiabaticPT module
-# and returns free parameters from the function adiabaticPT_freeParams(tepfile)
+# The initialPT profile is a free parameter generator for DEMC: it reads a
+# pressure file, extracts list of pressures, reads a tepfile, calculates 
+# planet's effective temperature to constrain one free parameter (T3), 
+# generates 5 free parameters and plots an non-inverted (semi-adiabatic)
+# initial PT profile. It uses initialPT module and returns free parameters 
+# from the function initialPT_freeParams().
 # The code takes 3 arguments on the command line: 
-# "InputConverter.py atmfile tepfile adiabaticPT"
+# "InputConverter.py pressureFile tepfile initialPT"
+# Example: InputConverter.py pressure_file.txt WASP-43b.tep initialPT
 # ============================================================================
 
-# extracts a pressure array from a file
+# 2013-11-17 0.1  Jasmina Blecic, jasmina@physics.ucf.edu   Original version
+# 2014-04-05 0.2  Jasmina Blecic, jasmina@physics.ucf.edu   Revision
+#      added new function planet_Teff
+#      changed free parameter T0 to T3 and equations and functions accordingly
+# 2014-04-17 0.3  Jasmina Blecic, jasmina@physics.ucf.edu   Revision
+#      added initialPT profile and free parameter generator
+# 2014-06-19 0.4   Jasmina Blecic, jasmina@physics.ucf.edu   Revision
+#      added makeP submodule that produces a pressure file and changed the code
+#      to read the pressure from the pressure file provided
+
+# extracts a pressure array from an atm file provided (obsolete function)
 def read_atm_file(atmfile):
      '''
      Reads an atmospheric file made in Transit (Patricio Rojo) format.
@@ -100,7 +106,53 @@ def read_atm_file(atmfile):
                p = pressures.astype(float)
 
      return p
+
+
+# extracts a pressure array from an pressure file provided
+def read_press_file(press_file):
+     '''
+     Reads a pressure file. The function takes the column with pressures
+     and converts it to floats.
  
+     Parameters
+     ----------
+     press_file: ASCII file, pressure file that contains a column of pressures  
+ 
+     Returns
+     -------
+     p: list of floats, pressures in the atmosphere 
+
+     Example
+     -------
+     press_file = "pressure_file.txt"
+     p = read_atm_file(press_file)
+ 
+     Revisions
+     ---------
+     2014-06-19 0.1  Jasmina Blecic, jasmina@physics.ucf.edu   Original version
+     '''
+     
+     # opens the atmospheric file to read
+     f = open(press_file, 'r')
+
+     # allocates array of pressure data and pressures
+     press_data = []
+     pressure   = []
+
+     # reads lines and store in pressure data
+     for line in f.readlines():
+         l = [value for value in line.split()]
+         press_data.append(l)
+         pres_data_size = len(press_data)
+
+     # reads pressures strings and convert them to floats
+     for i in np.arange(pres_data_size - 1):
+         pressure =  np.append(pressure, press_data[i+1][1])
+     p = pressure.astype(float)
+     f.close()
+
+     return p
+
 
 # reads the tep file and calculates planet's effective temperature
 def planet_Teff(tepfile):
@@ -257,10 +309,10 @@ def MPI_call_DEMC(noSpecies, MadhuPT, tepfile):
 # generates PT profile
 def PT_generator(p, free_params, noSpecies, MadhuPT):
      '''
-     This is a PT generator, that takes the pressure array from an atmospheric 
+     This is a PT generator, that takes the pressure array from a pressure 
      file, free parameters from DEMC, a number of molecular species, 
      and a string that defines inversion or non-inverison case and
-     generates Madhu's PT profiles. It calls the PTatmfile.py modul and
+     generates Madhu's PT profiles. It calls the PTpressFile.py module and
      returns inversion or non-inversion set of arrays for every layer in the
      atmosphere, and a Gaussian smoothed temperature array. 
 
@@ -312,7 +364,7 @@ def PT_generator(p, free_params, noSpecies, MadhuPT):
           # pulls out 6 parameters for PT profile, inversion case
           a1, a2, p1, p2, p3, T3 = free_params[noSpecies:noSpecies+6]
 
-          # call PTatmfile.py module, PT_Inversion function
+          # call PTpressFile.py module, PT_Inversion function
           PT_Inv, T_smooth_Inv = PT_Inversion(p, a1, a2, p1, p2, p3, T3)
           return PT_Inv, T_smooth_Inv
 
@@ -322,7 +374,7 @@ def PT_generator(p, free_params, noSpecies, MadhuPT):
           # pulls out 5 parameters for PT profile, non-inversion case
           a1, a2, p1, p3, T3 = free_params[noSpecies:noSpecies+5]
 
-          # call PTatmfile.py module, PT_NoInversion function
+          # call PTpressFile.py module, PT_NoInversion function
           PT_NoInv, T_smooth_NoInv = PT_NoInversion(p, a1, a2, p1, p3, T3)
           return PT_NoInv, T_smooth_NoInv
 
@@ -670,7 +722,7 @@ def main():
      This function defines number of arguments, reads the atmospheric file 
      given, extracts list of pressures from the atmospheric file, and 
      depending on the number of arguments either calls the loop to generate
-     Transit input or generate free parameters for adiabatic PT profile for
+     Transit input or generate free parameters for the initialPT profile for
      DEMC.
 
      Parameters
@@ -679,7 +731,7 @@ def main():
       
      Returns
      -------
-     None or free parameters of the adiabatic PT profile
+     None or free parameters of the initialPT profile
 
      Notes
      -----
@@ -688,7 +740,7 @@ def main():
              (Patricio Rojo)
      arg(2), tepfile
      arg(3), integer number of molecular species 
-             or string that defines adiabatic PT
+             or string that defines initial PT
      arg(4), to define whether it is a case of Madhu's inverted or 
              non-invereted atmosphere by specifying the string 
              "MadhuPT_Inv" for inverted atmosphere and the string 
@@ -701,45 +753,50 @@ def main():
                      added new argument for tepfile
                      added planet_Teff function to calculate Teff
      2014-04-17 0.3  Jasmina Blecic, jasmina@physics.ucf.edu   Revision
-                     added new argument for adiabatic PT profile and free
+                     added new argument for initial PT profile and free
                      parameter generator
+
+     2014-06-19 0.4 Jasmina Blecic, jasmina@physics.ucf.edu   Revision
+                     added makeP submodule that produces a pressure file 
+                     and changed the code to read the pressure from the 
+                     pressure file provided
      '''
 
      # counts number of arguments given
      noArguments = len(sys.argv)
 
-     # prints usage if number of arguments different from 4 or adiabatic profile
-     if noArguments != 5 and not (noArguments == 4 and sys.argv[3] == 'adiabaticPT'):
-        print '\nUsage: InputConverter.py atmfile tepfile number_of_species MadhuPT_Inv/MadhuPT_NoInv'
+     # prints usage if number of arguments different from 4 or initialPT profile
+     if noArguments != 5 and not (noArguments == 4 and sys.argv[3] == 'initialPT'):
+        print '\nUsage: InputConverter.py pressureFile tepfile number_of_species MadhuPT_Inv/MadhuPT_NoInv'
 
-        print '\nExample for an inverted atmosphere:\nInputConverter.py atmosphJB.dat tepfile 4 MadhuPT_Inv\n'
+        print '\nExample for an inverted atmosphere:\nInputConverter.py pressure_file.dat WASP-43b.tep 4 MadhuPT_Inv\n'
         return
      
-     # sets that the argument given is atmospheric file
-     atmfile = sys.argv[1]
+     # sets that the argument given is pressure file
+     press_file = sys.argv[1]
 
      # sets that the argument given is tepfile
      tepfile = sys.argv[2]
 
 
-     ################ ADIABATIC PT GENERATOR ####################
-     # generates adiabatic PT and returns free parameters
+     ################ INITIAL PT GENERATOR ####################
+     # generates initial PT and returns free parameters
      # used by DEMC as an initial guess
-     if sys.argv[3]=='adiabaticPT':
-          # reads atmospheric file and returns array of pressures
-          p = read_atm_file(atmfile)
+     if sys.argv[3]=='initialPT':
+          # reads press file and returns array of pressures
+          p = read_press_file(press_file)
 
           # reads tepfile and returns Teff
           Teff = planet_Teff(tepfile)
 
-          # produces adiabatic free parameters
-          PT_params = adiabaticPT_freeParams(tepfile)
+          # produces initial free parameters
+          PT_params = initialPT_freeParams(tepfile)
 
-          # plots the adiabatic profile for a sanity check
-          plot_adiabaticPT(tepfile)
+          # plots the initialPT profile for a sanity check
+          plot_initialPT(tepfile, press_file)
 
           # prints in terminal free parameters
-          print '\n   Free parameters of the adiabatic PT profile are: \n' + '        a1                a2               p1               p3             T3\n\n' + str(PT_params)
+          print '\n   Free parameters of the initial PT profile are: \n' + '        a1                a2               p1               p3             T3\n\n' + str(PT_params)
           print
 
           # shows the plots until user closes them
@@ -756,13 +813,19 @@ def main():
 
      # catches wrong 4th argument
      if sys.argv[4] != 'MadhuPT_Inv' and sys.argv[4] != 'MadhuPT_NoInv':
-        print '\nUsage: InputConverter.py atmfile tepfile number_of_species MadhuPT_Inv/MadhuPT_NoInv'
+        print '\nUsage: InputConverter.py pressureFile tepfile number_of_species MadhuPT_Inv/MadhuPT_NoInv'
 
         print '\nUse either MadhuPT_Inv string for inverted atmosphere, or MadhuPT_NoInv string for non-inverted atmosphere\n'
         return
      
-     # reads atmospheric file and returns array of pressures
-     p = read_atm_file(atmfile)
+     # reads pressure file and returns array of pressures
+     p = read_press_file(press_file)
+     print 'pressure file', p
+
+     # reads pressure file and returns array of pressures
+     atmfile = 'atmosphJB.dat'
+     p1 = read_atm_file(atmfile)
+     print 'atm file', p1
 
      # reads tepfile and returns Teff
      Teff = planet_Teff(tepfile)

@@ -14,24 +14,28 @@
 # evaluates PT from free parameters and the pressure array, makes 1D array 
 # of species multipliers and temperatures, and sends this array to Transit. 
 # The code takes 4 arguments on the command line: 
-# "InputConverter.py atmfile tepfile number_of_species MadhuPT_Inv/MadhuPT_NoINv"
-# The atmospheric file needs to provide a pressure array equally spaced 
-# in log space between 100 bar and 1e-5 bar. User should edit the 
+# "InputConverter.py pressureFile tepfile number_of_species MadhuPT_Inv/MadhuPT_NoINv"
+# User should edit the 
 # write_transit_input function, where the mark "EDIT" is to set names 
 # of the molecular species of interest. 
 # 2.
-# The adiabatic profile free parameter generator for DEMC: reads an atmospheric
+# The initial profile free parameter generator for DEMC: reads an atmospheric
 # file, extracts list of pressures, reads a tepfile, calculates planet's
 # effective temperature to constrain one free parameter, generates 5 free 
-# parameters and plots the adiabatic PT profile. It uses adiabaticPT module
-# and returns free parameters from the function adiabaticPT_freeParams(tepfile)
+# parameters and plots an initial PT profile. It uses initialPT module
+# and returns free parameters from the function initialPT_freeParams(tepfile)
 # The code takes 3 arguments on the command line: 
-# "InputConverter.py atmfile tepfile adiabaticPT"
+# "InputConverter.py atmfile tepfile initialPT"
 # ============================================================================
 
-  PTatmfile.py 
+  makeP.py 
 # ==========================================================================
-# Code takes a pressure array (e.g., extracted from an atmospheric file), 
+# Function to make the pressure array file to be used by BART.
+# ==========================================================================
+
+  PTpressFile.py 
+# ==========================================================================
+# Code takes a pressure array (e.g., extracted from a pressure file), 
 # and 6 free parameters for inversion case, 5 for non-inversion case and
 # generates parametric PT profile separately for inversion and non inversion 
 # case, based on Equation 2 in Madhusudhan and Seager 2009. The profile is 
@@ -50,9 +54,9 @@
 # The profile is then smoothed using 1D Gaussian filter.
 # ===============================================================
 
-  atmosphJB.dat
+  pressure_file.dat
 # ====================================================================
-# An example of an atmospheric file format used for InputConverter.py
+# An example of a pressure file format used for InputConverter.py
 # with pressure equally spaced in log space.
 # ====================================================================
 
