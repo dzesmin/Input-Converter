@@ -11,6 +11,7 @@ plt.ion()
 #                 changed free parameter T0 to T3
 #                 changed equations accordingly 
 
+
 # ===============================================================
 # Code takes 6 free parameters for inversion case, 5 for 
 # non-inversion case and number of levels in the atmosphere 
