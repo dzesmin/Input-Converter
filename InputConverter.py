@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter1d
 from PTpressFile import *
 import sys
+import os
 import string
 import reader as rd
 from initialPT import *
-import makeP as mP
 
 plt.ion()
 
@@ -40,6 +40,11 @@ plt.ion()
 # The code takes 3 arguments on the command line: 
 # "InputConverter.py pressureFile tepfile initialPT"
 # Example: InputConverter.py pressure_file.txt WASP-43b.tep initialPT
+# 3.
+# readatm() function is made to return all necessary data needed for Transit,
+# like: temperature array, abundances array, list of species, etc...
+# The function should be called separately. The atm file of interest must be
+# defined in BARTconfig.py
 # ============================================================================
 
 # 2013-11-17 0.1  Jasmina Blecic, jasmina@physics.ucf.edu   Original version
@@ -52,60 +57,117 @@ plt.ion()
 #      added makeP submodule that produces a pressure file and changed the code
 #      to read the pressure from the pressure file provided
 
-# extracts a pressure array from an atm file provided (obsolete function)
-def read_atm_file(atmfile):
-     '''
-     Reads an atmospheric file made in Transit (Patricio Rojo) format.
-     The function takes the column with pressures and converts it to floats.
+
+# reads final atm file and returns data
+def readatm(atm_file, spec_mark='#FINDSPEC', tea_mark='#FINDTEA'):
+    '''
+    This function reads an atm file and returns radii, temperature, pressure,
+    and abundances array. It opens an atm file to find markers for species
+    and TEA data, retrieves the species list, reads data below the markers, 
+    and fills out data into corresponding arrays. It also returns number of
+    layers in the atmosphere.
+
+    Parameters
+    -----------
+    atm_file:  ASCII file
+               Pre-atm file that contains species, radius, pressure, 
+               temperature, and elemental abundances data.
+    spec_mark: string
+               Marker used to locate species data in pre-atm file
+               (located in the line immediately preceding the data).
+    tea_mark:  string
+               Marker used to locate radius, pressure, temperature, and 
+               elemental abundances data (located in the line immediately
+               preceding the data).
+
+    Returns
+    -------
+    nLayers: float
+               Number of runs TEA will execute for each T-P 
+               (i.e., number of layers in the atmopshere) 
+    spec_list: string array
+               Array containing names of molecular species.
+    radi_arr:  float array
+               Array containing radius data.
+    pres_arr:  float array
+               Array containing pressure data.
+    temp_arr:  float array
+               Array containing temperature data.
+    abundances: string array
+               Array containing species abundances.
+    '''
+    
+    # Open file to read
+    f = open(atm_file, 'r')
+
+    # Read data from all lines in info list
+    info = []
+    for line in f.readlines():
+        l = [value for value in line.split()]
+        info.append(l)    
+    f.close()
+
+    # Initiate list of species and TEA markers 
+    marker = np.zeros(2, dtype=int) 
+
+    # Number of rows in file
+    ninfo  = np.size(info)         
+    
+    # Set marker list to the lines where data start
+    for i in np.arange(ninfo):
+        if info[i] == [spec_mark]:
+            marker[0] = i + 1
+        if info[i] == [tea_mark]:
+            marker[1] = i + 1
+    
+    # Retrieve species list using the species marker 
+    spec_list  = info[marker[0]]       
+    
+    # Retrieve labels for data array
+    data_label = np.array(info[marker[1]]) 
+
+    # Number of labels in data array
+    ncols      = np.size(data_label) 
  
-     Parameters
-     ----------
-     atmfile: ASCII file, atmosphric file that contains a column of pressures  
- 
-     Returns
-     -------
-     p: list of floats, pressures in the atmosphere 
+    # Number of lines to read for data table (inc. label)  
+    nrows      = ninfo - marker[1]     
+    
+    # Allocate data array
+    data = np.empty((nrows, ncols), dtype=np.object)
+    
+    # Fill in data array
+    for i in np.arange(nrows):
+        data[i] = np.array(info[marker[1] + i])
 
-     Notes
-     -----
-     The header of the atmospheric file has many lines and then the line
-     that looks like:
-     #rad-z     pres        temp              q_i...
-     #-6797.21  0.3488E+07  5276.19885762853  2.288755146204095E-005 
-     The function reads the lines after this header line and takes the data. 
-     The pressure column is placed between 11th and 20th character place.
+    # Number of layers in the atmosphere
+    nLayers = data.shape[0] - 1 
+    
+    # Take column numbers of non-element data
+    iradi = np.where(data_label == 'Radius'  )[0][0]
+    ipres = np.where(data_label == 'Pressure')[0][0]
+    itemp = np.where(data_label == 'Temp'    )[0][0]
 
-     Example
-     -------
-     atmfile = "atmosphJB.dat"
-     p = read_atm_file(atmfile)
- 
-     Revisions
-     ---------
-     2013-11-17 0.1  Jasmina Blecic, jasmina@physics.ucf.edu   Original version
-     '''
-     
-     # opens the atmospheric file to read
-     f = open(atmfile, 'r')
+    # Mark number of columns preceding element columns
+    iatom = 3 
+    
+    # Place data into corresponding arrays, exclude labels
+    radi_arr  = data[1:,iradi]      
+    pres_arr  = data[1:,ipres]      
+    temp_arr  = data[1:,itemp]      
+    abund_arr = data[1:,iatom:]  
 
-     # allocates array of pressures
-     pressures = []
+    # Not used currently, see with Patricio whether he needs it
+    # Assign locals with different variable names to store species abundances
+    for i in np.arange(len(spec_list)):
+        locals()['abun_{0}'.format(i)] = abund_arr[:, i]
 
-     # finds the line of interest in the header
-     for line in f:
-          if string.find(line, '#rad-z pres temp q_i...') > -1:
+    # Allocate and fill out abundances array:
+    abundances = np.empty((len(spec_list), nLayers), dtype=np.object)
+    for i in np.arange(len(spec_list)):
+        abundances[i] = abund_arr[:, i] 
 
-               # reads the atmospheric file from the row below the header
-               for line in f:
-                    data = line.strip()
+    return nLayers, spec_list, radi_arr, pres_arr, temp_arr, abundances
 
-                    # appends the data in every row from character 11th to 20th
-                    pressures = np.append(pressures, data[10:20])
-
-               # converts strings to floats
-               p = pressures.astype(float)
-
-     return p
 
 
 # extracts a pressure array from an pressure file provided
@@ -793,7 +855,7 @@ def main():
           PT_params = initialPT_freeParams(tepfile)
 
           # plots the initialPT profile for a sanity check
-          plot_initialPT(tepfile, press_file)
+          plot_initialPT(tepfile, press_file, PT_params)
 
           # prints in terminal free parameters
           print '\n   Free parameters of the initial PT profile are: \n' + '        a1                a2               p1               p3             T3\n\n' + str(PT_params)
@@ -820,7 +882,6 @@ def main():
      
      # reads pressure file and returns array of pressures
      p = read_press_file(press_file)
-     print 'pressure file', p
 
      # reads tepfile and returns Teff
      Teff = planet_Teff(tepfile)

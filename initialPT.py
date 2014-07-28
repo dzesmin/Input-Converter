@@ -1,5 +1,4 @@
 from InputConverter import *
-import makeP as mP
 import os
 
 # ====================================================================
@@ -74,7 +73,7 @@ def initialPT_freeParams(tepfile):
 
 
 # calculates initial PT profile
-def PT_initial(tepfile, press_file):
+def PT_initial(tepfile, press_file, PT_params):
      '''
      This is a PT profile generator that uses similar methodology as derived in
      Madhusudhan and Seager 2009. It takes an a pressure array from the pressure
@@ -104,20 +103,20 @@ def PT_initial(tepfile, press_file):
      Revisions
      ---------
      2014-04-05 0.1  Jasmina Blecic, jasmina@physics.ucf.edu   Original version
-     2014-06-26 0.2  Jasmina Blecic, jasmina@physics.ucf.edu   Revision
+     2014-07-02 0.2  Jasmina Blecic, jasmina@physics.ucf.edu   Revision
                      reads the pressure from the pressure file
      '''
 
      # takes free parameters
-     a1, a2, p1, p3, T3 = initialPT_freeParams(tepfile)
+     a1, a2, p1, p3, T3 = PT_params
 
      # takes pressure from the pressure file provided
      p = read_press_file(press_file)
 
      # reads pressures at the top and the bottom of the atmosphere
-     bottom = p[-1]
-     top    = p[0]
-     p0     = p[0]
+     bottom = max(p)
+     top    = min(p)
+     p0     = min(p)
 
      # reads number of layers from the pressure file
      noLevels = len(p)
@@ -171,7 +170,7 @@ def PT_initial(tepfile, press_file):
 
 
 # plots PT profiles
-def plot_initialPT(tepfile, press_file):
+def plot_initialPT(tepfile, press_file, PT_params):
      '''
      This function plots two figures:
      1.
@@ -191,16 +190,16 @@ def plot_initialPT(tepfile, press_file):
      Revisions
      ---------
      2014-04-08 0.1  Jasmina Blecic, jasmina@physics.ucf.edu   Original version
-     2014-06-26 0.2  Jasmina Blecic, jasmina@physics.ucf.edu   Reversion
+     2014-07-02 0.2  Jasmina Blecic, jasmina@physics.ucf.edu   Reversion
                      plots are now automatically placed in the plots/ directory
      '''
   
      # Get plots directory, create if non-existent
-     plots_dir = "plots/"
-     if not os.path.exists(plots_dir): os.makedirs(plots_dir)    
+     #plots_dir = input_dir + "initialPT-plots/"
+     #if not os.path.exists(plots_dir): os.makedirs(plots_dir)    
 
      # generates initial PT profile
-     PT, T_smooth, p = PT_initial(tepfile, press_file)
+     PT, T_smooth, p = PT_initial(tepfile, press_file, PT_params)
 
      # takes temperatures from PT generator
      T, T0, T1, T3 = PT[6], PT[8], PT[9], PT[10]
@@ -221,11 +220,11 @@ def plot_initialPT(tepfile, press_file):
      plt.ylim(max(p), min(p))
 
      # Place plot into plots directory with appropriate name 
-     plot_out1 = plots_dir + 'InitialPT.png'
+     plot_out1 = 'InitialPT.png'
      plt.savefig(plot_out1) 
      #plt.savefig('InitialPT.ps' , format='ps' )
 
-      # plots Gaussian smoothing
+     # plots Gaussian smoothing
      plt.figure(2)
      plt.semilogy(T_smooth, p, '-', color = 'b', linewidth=1)
      plt.title('Initial PT Smoothed', fontsize=14)
@@ -235,7 +234,7 @@ def plot_initialPT(tepfile, press_file):
      plt.xlim(minT, maxT)
 
      # Place plot into plots directory with appropriate name 
-     plot_out2 = plots_dir + 'InitialPTSmoothed.png'
+     plot_out2 = 'InitialPTSmoothed.png'
      plt.savefig(plot_out2) 
      #plt.savefig('InitialPTSmoothed.ps' , format='ps' )
 

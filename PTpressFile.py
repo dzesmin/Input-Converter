@@ -181,7 +181,6 @@ def PT_Inversion(p, a1, a2, p1, p2, p3, T3):
 
      # sets top of the atmosphere to p0 to have easy understandable equations
      p0 = min(p)
-     print p0
 
      # temperature at point 2
      # calculated from boundary condition between layer 2 and 3
