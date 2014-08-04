@@ -1,94 +1,45 @@
+This directory contains Input Converter source files for the BART project.
+It consists three modules:
+InputConverter.py
+PT.py
+InitialPT.py
+
 
   InputConverter.py
-# =============================================================================
-# This code serves as an input generator for Transit code and as a free 
-# parameter generator for DEMC. It works with parametrized PT profile done 
-# in a similar fashion as in Madhusudhan and Seager 2009, but has
-# a capability to be extended for other PT profiles. 
-# 1. 
-# The input generator for the Transit code: reads a pressure file, extracts
-# list of pressures, reads a tepfile, calculates planet's effective temperature
-# to constrain one free parameter (T3), gets array of free parameters from DEMC
-# (for inversion: x species multipliers and 6 for PT profile; 
-# for non-inversion: x species multipliers and 5 for PT profile),
-# evaluates PT from free parameters and the pressure array, makes 1D array 
-# of species multipliers and temperatures, and sends this array to Transit. 
-# The code takes 4 arguments on the command line: 
-# "InputConverter.py pressureFile tepfile number_of_species MadhuPT_Inv/MadhuPT_NoINv"
-# Example: InputConverter.py pressure_file.txt WASP-43b.tep 4 MadhuPT_Inv
-# User should edit the write_transit_input function, where the mark "EDIT" is,
-# to set the names of the molecular species of interest. 
-# 2.
-# The initialPT profile is a free parameter generator for DEMC: it reads a
-# pressure file, extracts list of pressures, reads a tepfile, calculates 
-# planet's effective temperature to constrain one free parameter (T3), 
-# generates 5 free parameters and plots an non-inverted (semi-adiabatic)
-# initial PT profile. It uses initialPT module and returns free parameters 
-# from the function initialPT_freeParams().
-# The code takes 3 arguments on the command line: 
-# "InputConverter.py pressureFile tepfile initialPT"
-# Example: InputConverter.py pressure_file.txt WASP-43b.tep initialPT
-# 3.
-# readatm() function is made to return all necessary data needed for Transit,
-# like: temperature array, abundances array, list of species, etc...
-# The function should be called separately. The atm file of interest must be
-# defined in BARTconfig.py
-# ============================================================================
+=============================================================================
+  This module currently contains one function readatm() that reads a TEA 
+  final atmospheric file and returns a list containing number of layers in 
+  the atmosphere, species names, radii, temperature, pressure, and each 
+  species abundances separately. It opens an atm file to find markers for 
+  species and the TEA data, retrieves the species list, reads data below the
+  markers, and fills out data into corresponding arrays. The final 
+  atmospheric file is produces based on the initial PT profile, thus 
+  containing just initial PT values.
+============================================================================
 
   initialPT.py
-# ====================================================================
-# Module that has three functions to produce free parameters of an 
-# initial PT profile, generates the profile, and plots it. Free 
-# parameters returned by the function initialPT_freeParams will be
-# used as an initial guess for DEMC.  
-# ====================================================================
-
-  makeP.py 
-# ==========================================================================
-# Function to make the pressure array file to be used by BART.
-# ==========================================================================
-
-  PTpressFile.py 
-# ==========================================================================
-# Code takes a pressure array (e.g., extracted from a pressure file), 
-# and 6 free parameters for inversion case, 5 for non-inversion case and
-# generates parametric PT profile separately for inversion and non inversion 
-# case, based on Equation 2 in Madhusudhan and Seager 2009. The profile is 
-# then smoothed using 1D Gaussian filter. The pressure array needs to be 
-# equally spaced in log space.
-# ==========================================================================
+============================================================================
+  Module that has two functions to produce an initial PT profile and plots 
+  it. This module with the PT.py module is used in the BART initialization
+  procedure. It produces and plots the non-inverted PT profile based on the
+  Equation 2 in Madhusudhan and Seager 2009. The profile is then smoothed 
+  using 1D Gaussian filter. The pressure array needs to be equally spaced 
+  in log space. 
+============================================================================
 
   PT.py 
-# ===============================================================
-# Code takes 6 free parameters for inversion case, 5 for 
-# non-inversion case and number of levels in the atmosphere 
-# and generates a parametric PT profile separately for inversion 
-# and non inversion case, based on Equation 2 in Madhusudhan and 
-# Seager 2009. Inner functions divide pressure on equally spaced 
-# parts in log space, so pressure is not a parameter.
-# The profile is then smoothed using 1D Gaussian filter.
-# ===============================================================
-
-  pressure_file.dat
-# ====================================================================
-# An example of a pressure file format used for InputConverter.py
-# with pressure equally spaced in log space.
-# ====================================================================
-
-  WASP-43b.tep
-# ====================================================================
-# An example of a tepfile.
-# ====================================================================
-
-  TransitInput
-# =====================================================================
-# Output of InputConverter.py and Input for Transit code. 
-# First column is a header which lists molecular species of interest 
-# and temperatures at each level in the atmosphere. Second column 
-# contains data, 1D array of factors of molecular species and Gaussian 
-# smoothed temperatures for PT profile. Top row defines whether it is 
-# an inversion or non-inversion case. Number of levels is set in the 
-# atmospheric file provided.
-# =====================================================================
+============================================================================
+  This module generates PT profiles for BART. The profiles are parametrized, 
+  done in a similar fashion as in Madhusudhan and Seager 2009. The module
+  contains the following functions:
+  read_press_file()  - reads a pressure file and extracts a list of pressures
+  planet_Teff()      - calculates planet effective temperate to constrain T3 
+                       parameter
+  PT_Inversion()     - generates inverted PT profile
+  PT_NoInversion()   - generates non-inverted PT profile
+  PT_generator()     - wrapper that calls either inverted or non-inverted 
+                       generator
+  plot_PT()          - plots PT profile
+===============================================================
 
 
